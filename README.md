@@ -12,13 +12,13 @@ This project is a small demo that teaches Bitcoin concepts over 21 days. It cons
 ## Running Locally
 
 1. Install [Node.js](https://nodejs.org/) (v16 or later).
-2. Install backend dependencies:
+2. Install dependencies with npm:
    ```
-   npm install express cors
+   npm install
    ```
 3. Start the server:
    ```
-   node server.js
+   npm start
    ```
    The server stores progress in `data.json`.
 4. Open `index.html` in your browser. You can also serve it with any static HTTP server.
