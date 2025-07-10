@@ -20,13 +20,25 @@
         body {
             margin: 0;
             padding: 0;
-            display: flex;
-            justify-content: center;
-            align-items: flex-start;
-            min-height: 100vh;
             background: #f6f6f6;
             color: #333;
+            font-size: clamp(14px, 2.5vw, 16px);
         }
+
+        .wrapper {
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 1.5rem;
+        }
+
+        @media (min-width: 600px) {
+            .wrapper {
+                padding: 2.5rem;
+            }
+        }
+
             .container {
                 width: 100%;
                 max-width: 480px;
@@ -43,9 +55,22 @@
             }
 
         h1 {
-            font-size: 1.5rem;
+            font-size: 1.75rem;
+            font-weight: bold;
             margin-bottom: 1rem;
             text-align: center;
+            color: #111;
+        }
+
+        h2 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 0.75rem;
+            color: #333;
+        }
+
+        p {
+            line-height: 1.4;
         }
 
         button {
@@ -57,11 +82,13 @@
             font-weight: bold;
             width: 100%;
             cursor: pointer;
-            transition: background 0.2s;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+            transition: background 0.2s, transform 0.1s;
         }
 
         button:hover {
             background: #e8851a;
+            transform: translateY(-2px);
         }
 
         button:disabled {
@@ -89,24 +116,29 @@
             .grid {
                 grid-template-columns: repeat(4, 1fr);
             }
-        }
 
-        @media (max-width: 420px) {
-            .grid {
-                grid-template-columns: repeat(4, 1fr);
-            }
         }
 
         .grid button {
             padding: 0.6rem 0;
-            background: #ddd;
+            background: #ffe0ba;
             color: #333;
             width: 100%;
+            border: none;
+            border-radius: 4px;
+            transition: background 0.2s, transform 0.1s;
+        }
+
+        .grid button:not(.locked):not(.complete):hover {
+            background: #f7931a;
+            color: #fff;
+            transform: translateY(-2px);
         }
 
         .grid button.locked {
-            background: #bbb;
+            background: #ccc;
             cursor: not-allowed;
+            color: #666;
         }
 
         .grid button.complete {
@@ -116,7 +148,10 @@
 
         .lesson img {
             max-width: 100%;
-            margin: 1rem 0;
+            max-height: 250px;
+            display: block;
+            margin: 1rem auto;
+            border-radius: 8px;
         }
 
         .nav {
@@ -129,6 +164,33 @@
             gap: 0.5rem;
             margin-bottom: 0.5rem;
         }
+
+        .lang-select button {
+            padding: 0.3rem 0.6rem;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            background: #e0e0e0;
+            color: #444;
+            transition: background 0.2s;
+        }
+
+        .lang-select button.active {
+            background: #f7931a;
+            color: #fff;
+            border-color: #f7931a;
+        }
+
+        .lang-select button.inactive {
+            background: #e0e0e0;
+            color: #444;
+        }
+
+        .lang-select button:hover {
+            background: #d5d5d5;
+        }
+
 
         .link {
             background: none;
@@ -177,8 +239,10 @@
     </style>
 </head>
 <body>
-<div class="container" id="app">
-    <div class="loading">Loading...</div>
+<div class="wrapper">
+    <div class="container" id="app">
+        <div class="loading">Loading...</div>
+    </div>
 </div>
 
 <script>
@@ -421,8 +485,8 @@
         function renderLanding() {
             app.innerHTML = `
                 <div class="lang-select">
-                    <button id="langEs" ${currentLang === 'es' ? 'disabled' : ''}>ES</button>
-                    <button id="langEn" ${currentLang === 'en' ? 'disabled' : ''}>EN</button>
+                    <button id="langEs" class="${currentLang === 'es' ? 'active' : 'inactive'}">ES</button>
+                    <button id="langEn" class="${currentLang === 'en' ? 'active' : 'inactive'}">EN</button>
                 </div>
                 <h1>${t('siteTitle')}</h1>
                 <p class="tagline">${t('tagline')}</p>
@@ -472,9 +536,15 @@
 
             for (let d = 1; d <= DAYS; d++) {
                 let cls = "";
-                if (completed.includes(d)) cls = "complete";
-                else if (d > allowed) cls = "locked";
-                gridHtml += `<button data-day="${d}" class="${cls}" ${d > allowed ? 'disabled' : ''}>${d}</button>`;
+                let label = d;
+                if (completed.includes(d)) {
+                    cls = "complete";
+                    label = "✅";
+                } else if (d > allowed) {
+                    cls = "locked";
+                    label = "🔒";
+                }
+                gridHtml += `<button data-day="${d}" class="${cls}" ${d > allowed ? 'disabled' : ''}>${label}</button>`;
             }
 
             app.innerHTML = `
