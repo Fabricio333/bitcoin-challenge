@@ -1,8 +1,15 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Aprende Bitcoin paso a paso con este desafío interactivo de 21 días." />
+    <meta name="keywords" content="bitcoin, tutorial, challenge, cryptocurrency" />
+    <meta name="robots" content="index, follow" />
+    <meta property="og:title" content="21-Day Bitcoin Challenge" />
+    <meta property="og:description" content="Aprende Bitcoin paso a paso con este desafío interactivo de 21 días." />
+    <meta property="og:image" content="img.png" />
+    <meta property="og:type" content="website" />
     <title>21-Day Bitcoin Challenge</title>
     <style>
         /* ========== BASIC STYLES ========== */
@@ -20,11 +27,20 @@
             background: #f6f6f6;
             color: #333;
         }
-        .container {
-            width: 100%;
-            max-width: 480px;
-            padding: 1rem;
-        }
+            .container {
+                width: 100%;
+                max-width: 480px;
+                padding: 1rem;
+                margin: 1rem auto;
+                background: #fff;
+                border-radius: 8px;
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            }
+
+            .tagline {
+                text-align: center;
+                margin-bottom: 1rem;
+            }
 
         h1 {
             font-size: 1.5rem;
@@ -66,6 +82,13 @@
             display: grid;
             grid-template-columns: repeat(7, 1fr);
             gap: 0.3rem;
+            justify-content: center;
+        }
+
+        @media (max-width: 420px) {
+            .grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
         }
 
         .grid button {
@@ -92,6 +115,13 @@
 
         .nav {
             margin-bottom: 1rem;
+        }
+
+        .lang-select {
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
         }
 
         .link {
@@ -149,11 +179,60 @@
     /* ============================================================
        21-Day Bitcoin Challenge – Client-side with server API
        ============================================================ */
-    (function () {
-        const API_BASE = 'http://localhost:3000/api';
-        const LS = localStorage;
-        const DAYS = 21;
-        const app = document.getElementById("app");
+        (function () {
+            const API_BASE = 'http://localhost:3000/api';
+            const LS = localStorage;
+            const DAYS = 21;
+            const app = document.getElementById("app");
+
+            const translations = {
+                es: {
+                    siteTitle: 'Desaf\u00edo Bitcoin de 21 D\u00edas',
+                    tagline: 'Aprende Bitcoin paso a paso en 21 d\u00edas.',
+                    enterName: 'Ingresa tu nombre',
+                    startChallenge: 'Comenzar Desaf\u00edo',
+                    resetProgress: 'Reiniciar Progreso',
+                    hello: 'Hola',
+                    dayOf: 'D\u00eda {n} de {total} disponible',
+                    lessonsCompleted: 'lecciones completadas',
+                    backToProgress: 'Volver al Progreso',
+                    markCompleted: 'Marcar como Completado',
+                    creating: 'Creando...',
+                    completing: 'Completando...',
+                    completedSuccess: '\u00a1Lecci\u00f3n completada! \u00a1Buen trabajo!'
+                },
+                en: {
+                    siteTitle: '21-Day Bitcoin Challenge',
+                    tagline: 'Learn Bitcoin step by step in 21 days.',
+                    enterName: 'Enter your name',
+                    startChallenge: 'Start Challenge',
+                    resetProgress: 'Reset Progress',
+                    hello: 'Hello',
+                    dayOf: 'Day {n} of {total} available',
+                    lessonsCompleted: 'lessons completed',
+                    backToProgress: 'Back to Progress',
+                    markCompleted: 'Mark as Completed',
+                    creating: 'Creating...',
+                    completing: 'Completing...',
+                    completedSuccess: 'Lesson completed! Great job!'
+                }
+            };
+
+            let currentLang = 'es';
+
+            function t(key, params = {}) {
+                let str = translations[currentLang][key] || key;
+                for (const p in params) {
+                    str = str.replace('{' + p + '}', params[p]);
+                }
+                return str;
+            }
+
+            function switchLang(lang) {
+                currentLang = lang;
+                document.documentElement.lang = lang;
+                render();
+            }
 
         // 🔸 Lesson content
         const LESSONS = {
@@ -161,6 +240,7 @@
                 title: "What Is Bitcoin?",
                 body: `
                     <p><strong>Bitcoin</strong> is an open, global, peer-to-peer money network that anyone can use without permission.</p>
+                    <img src="img.png" alt="Bitcoin illustration" />
                     <p>Key ideas:</p>
                     <ul>
                         <li>No central bank.</li>
@@ -334,12 +414,20 @@
 
         function renderLanding() {
             app.innerHTML = `
-                <h1>21-Day Bitcoin Challenge</h1>
+                <div class="lang-select">
+                    <button id="langEs" ${currentLang === 'es' ? 'disabled' : ''}>ES</button>
+                    <button id="langEn" ${currentLang === 'en' ? 'disabled' : ''}>EN</button>
+                </div>
+                <h1>${t('siteTitle')}</h1>
+                <p class="tagline">${t('tagline')}</p>
                 <form id="landingForm">
-                    <input id="nameInput" placeholder="Enter your name" required />
-                    <button type="submit">Start Challenge</button>
+                    <input id="nameInput" placeholder="${t('enterName')}" required />
+                    <button type="submit">${t('startChallenge')}</button>
                 </form>
             `;
+
+            document.getElementById('langEs').addEventListener('click', () => switchLang('es'));
+            document.getElementById('langEn').addEventListener('click', () => switchLang('en'));
 
             document.getElementById("landingForm").addEventListener("submit", async (e) => {
                 e.preventDefault();
@@ -349,19 +437,19 @@
                 try {
                     const submitButton = e.target.querySelector('button');
                     submitButton.disabled = true;
-                    submitButton.textContent = 'Creating...';
+                    submitButton.textContent = t('creating');
 
                     currentUser = await createUser(name);
                     globalCounts = await getAllGlobalCounts();
 
-                    showSuccess(`Welcome ${name}! Your challenge starts now.`);
+                    showSuccess(`${t('hello')} ${name}!`);
                     navigate("progress");
                     render();
                 } catch (error) {
                     showError(`Failed to create user: ${error.message}`);
                     const submitButton = e.target.querySelector('button');
                     submitButton.disabled = false;
-                    submitButton.textContent = 'Start Challenge';
+                    submitButton.textContent = t('startChallenge');
                 }
             });
         }
@@ -385,13 +473,13 @@
 
             app.innerHTML = `
                 <div class="nav">
-                    <button class="link" id="resetBtn">Reset Progress</button>
+                    <button class="link" id="resetBtn">${t('resetProgress')}</button>
                 </div>
-                <h1>Hello ${currentUser.name}!</h1>
-                <p>Day ${Math.min(allowed, DAYS)} of ${DAYS} available</p>
+                <h1>${t('hello')} ${currentUser.name}!</h1>
+                <p>${t('dayOf', { n: Math.min(allowed, DAYS), total: DAYS })}</p>
                 <div class="grid">${gridHtml}</div>
                 <div class="completed-count">
-                    ${completed.length} of ${DAYS} lessons completed
+                    ${completed.length} ${t('lessonsCompleted')}
                 </div>
             `;
 
@@ -423,7 +511,7 @@
             if (id > allowed) {
                 app.innerHTML = `
                     <p class="lock-msg">Day ${id} unlocks later.
-                        <button class="link" onclick="location.hash='progress'">Back to Progress</button>
+                        <button class="link" onclick="location.hash='progress'">${t('backToProgress')}</button>
                     </p>
                 `;
                 return;
@@ -439,11 +527,11 @@
 
             const statusHtml = completed.includes(id)
                 ? '<p><em>Completed ✅</em></p>'
-                : '<button id="completeBtn">Mark as Completed</button>';
+                : `<button id="completeBtn">${t('markCompleted')}</button>`;
 
             app.innerHTML = `
                 <div class="nav">
-                    <button class="link" onclick="location.hash='progress'">← Back to Progress</button>
+                    <button class="link" onclick="location.hash='progress'">← ${t('backToProgress')}</button>
                 </div>
                 <h1>Day ${id} – ${lesson.title}</h1>
                 <div class="lesson">${lesson.body}</div>
@@ -456,7 +544,7 @@
                 btn.addEventListener("click", async () => {
                     try {
                         btn.disabled = true;
-                        btn.textContent = 'Completing...';
+                        btn.textContent = t('completing');
 
                         const result = await completeLesson(currentUser.uuid, id);
 
@@ -464,13 +552,13 @@
                         currentUser.completed.push(id);
                         globalCounts[id] = result.globalCount;
 
-                        showSuccess('Lesson completed! Great job!');
+                        showSuccess(t('completedSuccess'));
                         navigate("progress");
                         render();
                     } catch (error) {
                         showError(`Failed to complete lesson: ${error.message}`);
                         btn.disabled = false;
-                        btn.textContent = 'Mark as Completed';
+                        btn.textContent = t('markCompleted');
                     }
                 });
             }
