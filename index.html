@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>21-Day Bitcoin Challenge</title>
+    <style>
+        /* ========== BASIC STYLES ========== */
+        * {
+            box-sizing: border-box;
+            font-family: system-ui, Arial, sans-serif;
+        }
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: #f6f6f6;
+            color: #333;
+        }
+        .container {
+            width: 100%;
+            max-width: 480px;
+            padding: 1rem;
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+
+        button {
+            background: #f7931a; /* Bitcoin orange */
+            border: none;
+            border-radius: 4px;
+            color: #fff;
+            padding: 0.6rem 1rem;
+            font-weight: bold;
+            width: 100%;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        button:hover {
+            background: #e8851a;
+        }
+
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        input {
+            width: 100%;
+            padding: 0.6rem;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            margin-bottom: 1rem;
+        }
+
+        /* Progress grid */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 0.3rem;
+        }
+
+        .grid button {
+            padding: 0.6rem 0;
+            background: #ddd;
+            color: #333;
+            width: 100%;
+        }
+
+        .grid button.locked {
+            background: #bbb;
+            cursor: not-allowed;
+        }
+
+        .grid button.complete {
+            background: #4caf50;
+            color: #fff;
+        }
+
+        .lesson img {
+            max-width: 100%;
+            margin: 1rem 0;
+        }
+
+        .nav {
+            margin-bottom: 1rem;
+        }
+
+        .link {
+            background: none;
+            border: none;
+            color: #f7931a;
+            text-decoration: underline;
+            cursor: pointer;
+            padding: 0;
+            width: auto;
+        }
+
+        .lock-msg {
+            color: #c00;
+            text-align: center;
+            margin-top: 2rem;
+        }
+
+        .completed-count {
+            font-size: 0.9rem;
+            color: #666;
+            text-align: center;
+            margin-top: 0.5rem;
+        }
+
+        .loading {
+            text-align: center;
+            color: #666;
+            padding: 2rem;
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 1rem;
+            border-radius: 4px;
+            margin-bottom: 1rem;
+        }
+
+        .success {
+            background: #d4edda;
+            color: #155724;
+            padding: 1rem;
+            border-radius: 4px;
+            margin-bottom: 1rem;
+        }
+    </style>
+</head>
+<body>
+<div class="container" id="app">
+    <div class="loading">Loading...</div>
+</div>
+
+<script>
+    /* ============================================================
+       21-Day Bitcoin Challenge – Client-side with server API
+       ============================================================ */
+    (function () {
+        const API_BASE = 'http://localhost:3000/api';
+        const LS = localStorage;
+        const DAYS = 21;
+        const app = document.getElementById("app");
+
+        // 🔸 Lesson content
+        const LESSONS = {
+            1: {
+                title: "What Is Bitcoin?",
+                body: `
+                    <p><strong>Bitcoin</strong> is an open, global, peer-to-peer money network that anyone can use without permission.</p>
+                    <p>Key ideas:</p>
+                    <ul>
+                        <li>No central bank.</li>
+                        <li>Fixed supply: 21 million coins.</li>
+                        <li>Borderless &amp; censorship-resistant.</li>
+                    </ul>
+                    <p>Useful links:</p>
+                    <ul>
+                        <li><a href="https://bitcoin.org" target="_blank" rel="noopener">bitcoin.org</a></li>
+                        <li><a href="https://en.bitcoin.it/wiki/Main_Page" target="_blank" rel="noopener">Bitcoin Wiki</a></li>
+                    </ul>
+                `,
+            },
+            2: {
+                title: "How Bitcoin Works",
+                body: `
+                    <p>Bitcoin uses a technology called <strong>blockchain</strong> to maintain a distributed ledger of all transactions.</p>
+                    <p>Key concepts:</p>
+                    <ul>
+                        <li>Transactions are verified by network nodes</li>
+                        <li>Blocks are linked using cryptography</li>
+                        <li>Mining secures the network</li>
+                    </ul>
+                `,
+            },
+            3: {
+                title: "Bitcoin Wallets",
+                body: `
+                    <p>A Bitcoin wallet is a digital tool that allows you to store, send, and receive Bitcoin.</p>
+                    <p>Types of wallets:</p>
+                    <ul>
+                        <li>Software wallets (mobile, desktop)</li>
+                        <li>Hardware wallets (cold storage)</li>
+                        <li>Paper wallets</li>
+                    </ul>
+                `,
+            },
+            // Add more lessons as needed...
+        };
+
+        // State management
+        let currentUser = null;
+        let globalCounts = {};
+
+        /* --------------------- API Functions --------------------- */
+        async function apiCall(endpoint, options = {}) {
+            try {
+                const response = await fetch(`${API_BASE}${endpoint}`, {
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...options.headers
+                    },
+                    ...options
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'API call failed');
+                }
+
+                return await response.json();
+            } catch (error) {
+                console.error('API Error:', error);
+                throw error;
+            }
+        }
+
+        async function createUser(name) {
+            const user = await apiCall('/users', {
+                method: 'POST',
+                body: JSON.stringify({ name })
+            });
+            LS.setItem('userUuid', user.uuid);
+            return user;
+        }
+
+        async function getUser(uuid) {
+            return await apiCall(`/users/${uuid}`);
+        }
+
+        async function completeLesson(uuid, day) {
+            return await apiCall(`/users/${uuid}/complete/${day}`, {
+                method: 'POST'
+            });
+        }
+
+        async function getGlobalCount(day) {
+            return await apiCall(`/global-count/${day}`);
+        }
+
+        async function getAllGlobalCounts() {
+            return await apiCall('/global-counts');
+        }
+
+        /* --------------------- Utility Functions --------------------- */
+        function daysSince(date) {
+            return Math.floor((Date.now() - new Date(date).getTime()) / 86400000);
+        }
+
+        function allowedDay(user) {
+            return 1 + daysSince(user.startDate);
+        }
+
+        function navigate(hash) {
+            location.hash = hash;
+        }
+
+        function showError(message) {
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'error';
+            errorDiv.textContent = message;
+            app.insertBefore(errorDiv, app.firstChild);
+            setTimeout(() => errorDiv.remove(), 5000);
+        }
+
+        function showSuccess(message) {
+            const successDiv = document.createElement('div');
+            successDiv.className = 'success';
+            successDiv.textContent = message;
+            app.insertBefore(successDiv, app.firstChild);
+            setTimeout(() => successDiv.remove(), 3000);
+        }
+
+        /* ---------------------- Render Functions ----------------------- */
+        async function render() {
+            app.innerHTML = '<div class="loading">Loading...</div>';
+
+            const hash = location.hash.replace("#", "");
+
+            try {
+                // Load user if UUID exists
+                const userUuid = LS.getItem('userUuid');
+                if (userUuid && !currentUser) {
+                    try {
+                        currentUser = await getUser(userUuid);
+                        globalCounts = await getAllGlobalCounts();
+                    } catch (error) {
+                        // User not found on server, clear local storage
+                        LS.removeItem('userUuid');
+                        currentUser = null;
+                    }
+                }
+
+                if (!hash) {
+                    renderLandingOrProgress();
+                    return;
+                }
+                if (hash === "progress") {
+                    renderProgress();
+                    return;
+                }
+                if (hash.startsWith("day/")) {
+                    const id = parseInt(hash.split("/")[1], 10);
+                    await renderDay(id);
+                    return;
+                }
+                renderLandingOrProgress();
+            } catch (error) {
+                showError(`Error loading page: ${error.message}`);
+                renderLandingOrProgress();
+            }
+        }
+
+        function renderLandingOrProgress() {
+            if (!currentUser) {
+                renderLanding();
+            } else {
+                navigate("progress");
+            }
+        }
+
+        function renderLanding() {
+            app.innerHTML = `
+                <h1>21-Day Bitcoin Challenge</h1>
+                <form id="landingForm">
+                    <input id="nameInput" placeholder="Enter your name" required />
+                    <button type="submit">Start Challenge</button>
+                </form>
+            `;
+
+            document.getElementById("landingForm").addEventListener("submit", async (e) => {
+                e.preventDefault();
+                const name = document.getElementById("nameInput").value.trim();
+                if (!name) return;
+
+                try {
+                    const submitButton = e.target.querySelector('button');
+                    submitButton.disabled = true;
+                    submitButton.textContent = 'Creating...';
+
+                    currentUser = await createUser(name);
+                    globalCounts = await getAllGlobalCounts();
+
+                    showSuccess(`Welcome ${name}! Your challenge starts now.`);
+                    navigate("progress");
+                    render();
+                } catch (error) {
+                    showError(`Failed to create user: ${error.message}`);
+                    const submitButton = e.target.querySelector('button');
+                    submitButton.disabled = false;
+                    submitButton.textContent = 'Start Challenge';
+                }
+            });
+        }
+
+        function renderProgress() {
+            if (!currentUser) {
+                navigate("");
+                return;
+            }
+
+            const allowed = allowedDay(currentUser);
+            const completed = currentUser.completed || [];
+            let gridHtml = "";
+
+            for (let d = 1; d <= DAYS; d++) {
+                let cls = "";
+                if (completed.includes(d)) cls = "complete";
+                else if (d > allowed) cls = "locked";
+                gridHtml += `<button data-day="${d}" class="${cls}" ${d > allowed ? 'disabled' : ''}>${d}</button>`;
+            }
+
+            app.innerHTML = `
+                <div class="nav">
+                    <button class="link" id="resetBtn">Reset Progress</button>
+                </div>
+                <h1>Hello ${currentUser.name}!</h1>
+                <p>Day ${Math.min(allowed, DAYS)} of ${DAYS} available</p>
+                <div class="grid">${gridHtml}</div>
+                <div class="completed-count">
+                    ${completed.length} of ${DAYS} lessons completed
+                </div>
+            `;
+
+            document.querySelectorAll(".grid button:not([disabled])").forEach((btn) => {
+                btn.addEventListener("click", () => {
+                    const day = parseInt(btn.dataset.day, 10);
+                    navigate(`day/${day}`);
+                    render();
+                });
+            });
+
+            document.getElementById("resetBtn").addEventListener("click", () => {
+                if (confirm("Reset your progress? This cannot be undone.")) {
+                    LS.removeItem('userUuid');
+                    currentUser = null;
+                    navigate("");
+                    render();
+                }
+            });
+        }
+
+        async function renderDay(id) {
+            if (!currentUser) {
+                navigate("");
+                return;
+            }
+
+            const allowed = allowedDay(currentUser);
+            if (id > allowed) {
+                app.innerHTML = `
+                    <p class="lock-msg">Day ${id} unlocks later.
+                        <button class="link" onclick="location.hash='progress'">Back to Progress</button>
+                    </p>
+                `;
+                return;
+            }
+
+            const lesson = LESSONS[id] || {
+                title: `Day ${id}`,
+                body: "<p>Content coming soon.</p>",
+            };
+
+            const completed = currentUser.completed || [];
+            const globalCount = globalCounts[id] || 0;
+
+            const statusHtml = completed.includes(id)
+                ? '<p><em>Completed ✅</em></p>'
+                : '<button id="completeBtn">Mark as Completed</button>';
+
+            app.innerHTML = `
+                <div class="nav">
+                    <button class="link" onclick="location.hash='progress'">← Back to Progress</button>
+                </div>
+                <h1>Day ${id} – ${lesson.title}</h1>
+                <div class="lesson">${lesson.body}</div>
+                ${statusHtml}
+                <p class="completed-count">${globalCount} people have completed this lesson</p>
+            `;
+
+            const btn = document.getElementById("completeBtn");
+            if (btn) {
+                btn.addEventListener("click", async () => {
+                    try {
+                        btn.disabled = true;
+                        btn.textContent = 'Completing...';
+
+                        const result = await completeLesson(currentUser.uuid, id);
+
+                        // Update local user data
+                        currentUser.completed.push(id);
+                        globalCounts[id] = result.globalCount;
+
+                        showSuccess('Lesson completed! Great job!');
+                        navigate("progress");
+                        render();
+                    } catch (error) {
+                        showError(`Failed to complete lesson: ${error.message}`);
+                        btn.disabled = false;
+                        btn.textContent = 'Mark as Completed';
+                    }
+                });
+            }
+        }
+
+        // Initialize app
+        window.addEventListener("hashchange", render);
+        render();
+    })();
+</script>
+</body>
+</html>
