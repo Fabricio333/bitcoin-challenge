@@ -1,8 +1,15 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Aprende Bitcoin paso a paso con este desafío interactivo de 21 días." />
+    <meta name="keywords" content="bitcoin, tutorial, challenge, cryptocurrency" />
+    <meta name="robots" content="index, follow" />
+    <meta property="og:title" content="21-Day Bitcoin Challenge" />
+    <meta property="og:description" content="Aprende Bitcoin paso a paso con este desafío interactivo de 21 días." />
+    <meta property="og:image" content="img.png" />
+    <meta property="og:type" content="website" />
     <title>21-Day Bitcoin Challenge</title>
     <style>
         /* ========== BASIC STYLES ========== */
@@ -13,23 +20,57 @@
         body {
             margin: 0;
             padding: 0;
+            background: #f6f6f6;
+            color: #333;
+            font-size: clamp(14px, 2.5vw, 16px);
+        }
+
+        .wrapper {
+            min-height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
-            min-height: 100vh;
-            background: #f6f6f6;
-            color: #333;
-        }
-        .container {
-            width: 100%;
-            max-width: 480px;
-            padding: 1rem;
+            padding: 1.5rem;
         }
 
+        @media (min-width: 600px) {
+            .wrapper {
+                padding: 2.5rem;
+            }
+        }
+
+            .container {
+                width: 100%;
+                max-width: 480px;
+                padding: 1rem;
+                margin: 1rem auto;
+                background: #fff;
+                border-radius: 8px;
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            }
+
+            .tagline {
+                text-align: center;
+                margin-bottom: 1rem;
+            }
+
         h1 {
-            font-size: 1.5rem;
+            font-size: 1.75rem;
+            font-weight: bold;
             margin-bottom: 1rem;
             text-align: center;
+            color: #111;
+        }
+
+        h2 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 0.75rem;
+            color: #333;
+        }
+
+        p {
+            line-height: 1.4;
         }
 
         button {
@@ -41,11 +82,13 @@
             font-weight: bold;
             width: 100%;
             cursor: pointer;
-            transition: background 0.2s;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+            transition: background 0.2s, transform 0.1s;
         }
 
         button:hover {
             background: #e8851a;
+            transform: translateY(-2px);
         }
 
         button:disabled {
@@ -66,18 +109,35 @@
             display: grid;
             grid-template-columns: repeat(7, 1fr);
             gap: 0.3rem;
+            justify-content: center;
+        }
+
+        @media (max-width: 420px) {
+            .grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
         }
 
         .grid button {
             padding: 0.6rem 0;
-            background: #ddd;
+            background: #ffe0ba;
             color: #333;
             width: 100%;
+            border: none;
+            border-radius: 4px;
+            transition: background 0.2s, transform 0.1s;
+        }
+
+        .grid button:not(.locked):not(.complete):hover {
+            background: #f7931a;
+            color: #fff;
+            transform: translateY(-2px);
         }
 
         .grid button.locked {
-            background: #bbb;
+            background: #ccc;
             cursor: not-allowed;
+            color: #666;
         }
 
         .grid button.complete {
@@ -87,11 +147,47 @@
 
         .lesson img {
             max-width: 100%;
-            margin: 1rem 0;
+            max-height: 250px;
+            display: block;
+            margin: 1rem auto;
+            border-radius: 8px;
         }
 
         .nav {
             margin-bottom: 1rem;
+        }
+
+        .lang-select {
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .lang-select button {
+            padding: 0.3rem 0.6rem;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            background: #e0e0e0;
+            color: #444;
+            transition: background 0.2s;
+        }
+
+        .lang-select button.active {
+            background: #f7931a;
+            color: #fff;
+            border-color: #f7931a;
+        }
+
+        .lang-select button.inactive {
+            background: #e0e0e0;
+            color: #444;
+        }
+
+        .lang-select button:hover {
+            background: #d5d5d5;
         }
 
         .link {
@@ -141,65 +237,169 @@
     </style>
 </head>
 <body>
-<div class="container" id="app">
-    <div class="loading">Loading...</div>
+<div class="wrapper">
+    <div class="container" id="app">
+        <div class="loading">Loading...</div>
+    </div>
 </div>
 
 <script>
     /* ============================================================
        21-Day Bitcoin Challenge – Client-side with server API
        ============================================================ */
-    (function () {
-        const API_BASE = 'http://localhost:3000/api';
-        const LS = localStorage;
-        const DAYS = 21;
-        const app = document.getElementById("app");
+        (function () {
+            const API_BASE = 'http://localhost:3000/api';
+            const LS = localStorage;
+            const DAYS = 21;
+            const app = document.getElementById("app");
 
-        // 🔸 Lesson content
-        const LESSONS = {
-            1: {
-                title: "What Is Bitcoin?",
-                body: `
-                    <p><strong>Bitcoin</strong> is an open, global, peer-to-peer money network that anyone can use without permission.</p>
-                    <p>Key ideas:</p>
-                    <ul>
-                        <li>No central bank.</li>
-                        <li>Fixed supply: 21 million coins.</li>
-                        <li>Borderless &amp; censorship-resistant.</li>
-                    </ul>
-                    <p>Useful links:</p>
-                    <ul>
-                        <li><a href="https://bitcoin.org" target="_blank" rel="noopener">bitcoin.org</a></li>
-                        <li><a href="https://en.bitcoin.it/wiki/Main_Page" target="_blank" rel="noopener">Bitcoin Wiki</a></li>
-                    </ul>
-                `,
-            },
-            2: {
-                title: "How Bitcoin Works",
-                body: `
-                    <p>Bitcoin uses a technology called <strong>blockchain</strong> to maintain a distributed ledger of all transactions.</p>
-                    <p>Key concepts:</p>
-                    <ul>
-                        <li>Transactions are verified by network nodes</li>
-                        <li>Blocks are linked using cryptography</li>
-                        <li>Mining secures the network</li>
-                    </ul>
-                `,
-            },
-            3: {
-                title: "Bitcoin Wallets",
-                body: `
-                    <p>A Bitcoin wallet is a digital tool that allows you to store, send, and receive Bitcoin.</p>
-                    <p>Types of wallets:</p>
-                    <ul>
-                        <li>Software wallets (mobile, desktop)</li>
-                        <li>Hardware wallets (cold storage)</li>
-                        <li>Paper wallets</li>
-                    </ul>
-                `,
-            },
-            // Add more lessons as needed...
-        };
+            const translations = {
+                es: {
+                    siteTitle: 'Desaf\u00edo Bitcoin de 21 D\u00edas',
+                    tagline: 'Aprende Bitcoin paso a paso en 21 d\u00edas.',
+                    enterName: 'Ingresa tu nombre',
+                    startChallenge: 'Comenzar Desaf\u00edo',
+                    resetProgress: 'Reiniciar Progreso',
+                    hello: 'Hola',
+                    dayOf: 'D\u00eda {n} de {total} disponible',
+                    dayWord: 'D\u00eda',
+                    lessonsCompleted: 'lecciones completadas',
+                    backToProgress: 'Volver al Progreso',
+                    markCompleted: 'Marcar como Completado',
+                    creating: 'Creando...',
+                    completing: 'Completando...',
+                    completedSuccess: '\u00a1Lecci\u00f3n completada! \u00a1Buen trabajo!',
+                    lessons: {
+                        1: {
+                            title: '\u00bfQu\u00e9 es Bitcoin?',
+                            body: `
+                                <p><strong>Bitcoin</strong> es una red de dinero global, abierta y de igual a igual que cualquiera puede usar sin permiso.</p>
+                                <img src="img.png" alt="Ilustraci\u00f3n de Bitcoin" />
+                                <p>Puntos clave:</p>
+                                <ul>
+                                    <li>Sin banco central.</li>
+                                    <li>Oferta fija: 21 millones de monedas.</li>
+                                    <li>Sin fronteras y resistente a la censura.</li>
+                                </ul>
+                                <p>Enlaces \u00fatiles:</p>
+                                <ul>
+                                    <li><a href="https://bitcoin.org" target="_blank" rel="noopener">bitcoin.org</a></li>
+                                    <li><a href="https://es.bitcoin.it/wiki/P\u00e1gina_principal" target="_blank" rel="noopener">Bitcoin Wiki</a></li>
+                                </ul>
+                            `
+                        },
+                        2: {
+                            title: '\u00bfC\u00f3mo funciona Bitcoin?',
+                            body: `
+                                <p>Bitcoin utiliza una tecnolog\u00eda llamada <strong>cadena de bloques</strong> para mantener un registro distribuido de todas las transacciones.</p>
+                                <p>Conceptos clave:</p>
+                                <ul>
+                                    <li>Las transacciones son verificadas por nodos de la red</li>
+                                    <li>Los bloques est\u00e1n enlazados mediante criptograf\u00eda</li>
+                                    <li>La miner\u00eda asegura la red</li>
+                                </ul>
+                            `
+                        },
+                        3: {
+                            title: 'Monederos Bitcoin',
+                            body: `
+                                <p>Un monedero Bitcoin es una herramienta digital que te permite almacenar, enviar y recibir Bitcoin.</p>
+                                <p>Tipos de monederos:</p>
+                                <ul>
+                                    <li>Monederos de software (m\u00f3vil, escritorio)</li>
+                                    <li>Monederos de hardware (almacenamiento en fr\u00edo)</li>
+                                    <li>Monederos de papel</li>
+                                </ul>
+                            `
+                        }
+                    }
+                },
+                en: {
+                    siteTitle: '21-Day Bitcoin Challenge',
+                    tagline: 'Learn Bitcoin step by step in 21 days.',
+                    enterName: 'Enter your name',
+                    startChallenge: 'Start Challenge',
+                    resetProgress: 'Reset Progress',
+                    hello: 'Hello',
+                    dayOf: 'Day {n} of {total} available',
+                    dayWord: 'Day',
+                    lessonsCompleted: 'lessons completed',
+                    backToProgress: 'Back to Progress',
+                    markCompleted: 'Mark as Completed',
+                    creating: 'Creating...',
+                    completing: 'Completing...',
+                    completedSuccess: 'Lesson completed! Great job!',
+                    lessons: {
+                        1: {
+                            title: 'What Is Bitcoin?',
+                            body: `
+                                <p><strong>Bitcoin</strong> is an open, global, peer-to-peer money network that anyone can use without permission.</p>
+                                <img src="img.png" alt="Bitcoin illustration" />
+                                <p>Key ideas:</p>
+                                <ul>
+                                    <li>No central bank.</li>
+                                    <li>Fixed supply: 21 million coins.</li>
+                                    <li>Borderless &amp; censorship-resistant.</li>
+                                </ul>
+                                <p>Useful links:</p>
+                                <ul>
+                                    <li><a href="https://bitcoin.org" target="_blank" rel="noopener">bitcoin.org</a></li>
+                                    <li><a href="https://en.bitcoin.it/wiki/Main_Page" target="_blank" rel="noopener">Bitcoin Wiki</a></li>
+                                </ul>
+                            `
+                        },
+                        2: {
+                            title: 'How Bitcoin Works',
+                            body: `
+                                <p>Bitcoin uses a technology called <strong>blockchain</strong> to maintain a distributed ledger of all transactions.</p>
+                                <p>Key concepts:</p>
+                                <ul>
+                                    <li>Transactions are verified by network nodes</li>
+                                    <li>Blocks are linked using cryptography</li>
+                                    <li>Mining secures the network</li>
+                                </ul>
+                            `
+                        },
+                        3: {
+                            title: 'Bitcoin Wallets',
+                            body: `
+                                <p>A Bitcoin wallet is a digital tool that allows you to store, send, and receive Bitcoin.</p>
+                                <p>Types of wallets:</p>
+                                <ul>
+                                    <li>Software wallets (mobile, desktop)</li>
+                                    <li>Hardware wallets (cold storage)</li>
+                                    <li>Paper wallets</li>
+                                </ul>
+                            `
+                        }
+                    }
+                }
+            };
+
+            let currentLang = 'es';
+
+            function t(key, params = {}) {
+                let str = translations[currentLang][key] || key;
+                for (const p in params) {
+                    str = str.replace('{' + p + '}', params[p]);
+                }
+                return str;
+            }
+
+            function switchLang(lang) {
+                currentLang = lang;
+                document.documentElement.lang = lang;
+                render();
+            }
+
+        // 🔸 Lesson content helper
+        function getLesson(id) {
+            return (
+                (translations[currentLang].lessons && translations[currentLang].lessons[id]) ||
+                (translations.en.lessons && translations.en.lessons[id]) ||
+                { title: `${t('dayWord')} ${id}`, body: '<p>Content coming soon.</p>' }
+            );
+        }
 
         // State management
         let currentUser = null;
@@ -288,6 +488,8 @@
         async function render() {
             app.innerHTML = '<div class="loading">Loading...</div>';
 
+            document.title = t('siteTitle');
+
             const hash = location.hash.replace("#", "");
 
             try {
@@ -334,12 +536,20 @@
 
         function renderLanding() {
             app.innerHTML = `
-                <h1>21-Day Bitcoin Challenge</h1>
+                <div class="lang-select">
+                    <button id="langEs" class="${currentLang === 'es' ? 'active' : 'inactive'}">ES</button>
+                    <button id="langEn" class="${currentLang === 'en' ? 'active' : 'inactive'}">EN</button>
+                </div>
+                <h1>${t('siteTitle')}</h1>
+                <p class="tagline">${t('tagline')}</p>
                 <form id="landingForm">
-                    <input id="nameInput" placeholder="Enter your name" required />
-                    <button type="submit">Start Challenge</button>
+                    <input id="nameInput" placeholder="${t('enterName')}" required />
+                    <button type="submit">${t('startChallenge')}</button>
                 </form>
             `;
+
+            document.getElementById('langEs').addEventListener('click', () => switchLang('es'));
+            document.getElementById('langEn').addEventListener('click', () => switchLang('en'));
 
             document.getElementById("landingForm").addEventListener("submit", async (e) => {
                 e.preventDefault();
@@ -349,19 +559,19 @@
                 try {
                     const submitButton = e.target.querySelector('button');
                     submitButton.disabled = true;
-                    submitButton.textContent = 'Creating...';
+                    submitButton.textContent = t('creating');
 
                     currentUser = await createUser(name);
                     globalCounts = await getAllGlobalCounts();
 
-                    showSuccess(`Welcome ${name}! Your challenge starts now.`);
+                    showSuccess(`${t('hello')} ${name}!`);
                     navigate("progress");
                     render();
                 } catch (error) {
                     showError(`Failed to create user: ${error.message}`);
                     const submitButton = e.target.querySelector('button');
                     submitButton.disabled = false;
-                    submitButton.textContent = 'Start Challenge';
+                    submitButton.textContent = t('startChallenge');
                 }
             });
         }
@@ -378,20 +588,26 @@
 
             for (let d = 1; d <= DAYS; d++) {
                 let cls = "";
-                if (completed.includes(d)) cls = "complete";
-                else if (d > allowed) cls = "locked";
-                gridHtml += `<button data-day="${d}" class="${cls}" ${d > allowed ? 'disabled' : ''}>${d}</button>`;
+                let label = d;
+                if (completed.includes(d)) {
+                    cls = "complete";
+                    label = "✅";
+                } else if (d > allowed) {
+                    cls = "locked";
+                    label = "🔒";
+                }
+                gridHtml += `<button data-day="${d}" class="${cls}" ${d > allowed ? 'disabled' : ''}>${label}</button>`;
             }
 
             app.innerHTML = `
                 <div class="nav">
-                    <button class="link" id="resetBtn">Reset Progress</button>
+                    <button class="link" id="resetBtn">${t('resetProgress')}</button>
                 </div>
-                <h1>Hello ${currentUser.name}!</h1>
-                <p>Day ${Math.min(allowed, DAYS)} of ${DAYS} available</p>
+                <h1>${t('hello')} ${currentUser.name}!</h1>
+                <p>${t('dayOf', { n: Math.min(allowed, DAYS), total: DAYS })}</p>
                 <div class="grid">${gridHtml}</div>
                 <div class="completed-count">
-                    ${completed.length} of ${DAYS} lessons completed
+                    ${completed.length} ${t('lessonsCompleted')}
                 </div>
             `;
 
@@ -422,30 +638,27 @@
             const allowed = allowedDay(currentUser);
             if (id > allowed) {
                 app.innerHTML = `
-                    <p class="lock-msg">Day ${id} unlocks later.
-                        <button class="link" onclick="location.hash='progress'">Back to Progress</button>
+                    <p class="lock-msg">${t('dayWord')} ${id} unlocks later.
+                        <button class="link" onclick="location.hash='progress'">${t('backToProgress')}</button>
                     </p>
                 `;
                 return;
             }
 
-            const lesson = LESSONS[id] || {
-                title: `Day ${id}`,
-                body: "<p>Content coming soon.</p>",
-            };
+            const lesson = getLesson(id);
 
             const completed = currentUser.completed || [];
             const globalCount = globalCounts[id] || 0;
 
             const statusHtml = completed.includes(id)
                 ? '<p><em>Completed ✅</em></p>'
-                : '<button id="completeBtn">Mark as Completed</button>';
+                : `<button id="completeBtn">${t('markCompleted')}</button>`;
 
             app.innerHTML = `
                 <div class="nav">
-                    <button class="link" onclick="location.hash='progress'">← Back to Progress</button>
+                    <button class="link" onclick="location.hash='progress'">← ${t('backToProgress')}</button>
                 </div>
-                <h1>Day ${id} – ${lesson.title}</h1>
+                <h1>${t('dayWord')} ${id} – ${lesson.title}</h1>
                 <div class="lesson">${lesson.body}</div>
                 ${statusHtml}
                 <p class="completed-count">${globalCount} people have completed this lesson</p>
@@ -456,7 +669,7 @@
                 btn.addEventListener("click", async () => {
                     try {
                         btn.disabled = true;
-                        btn.textContent = 'Completing...';
+                        btn.textContent = t('completing');
 
                         const result = await completeLesson(currentUser.uuid, id);
 
@@ -464,13 +677,13 @@
                         currentUser.completed.push(id);
                         globalCounts[id] = result.globalCount;
 
-                        showSuccess('Lesson completed! Great job!');
+                        showSuccess(t('completedSuccess'));
                         navigate("progress");
                         render();
                     } catch (error) {
                         showError(`Failed to complete lesson: ${error.message}`);
                         btn.disabled = false;
-                        btn.textContent = 'Mark as Completed';
+                        btn.textContent = t('markCompleted');
                     }
                 });
             }
