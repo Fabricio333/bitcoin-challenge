@@ -96,6 +96,11 @@
             cursor: not-allowed;
         }
 
+        button.complete {
+            background: #4caf50;
+            color: #fff;
+        }
+
         input {
             width: 100%;
             padding: 0.6rem;
@@ -266,6 +271,7 @@
                     lessonsCompleted: 'lecciones completadas',
                     backToProgress: 'Volver al Progreso',
                     markCompleted: 'Marcar como Completado',
+                    completedLabel: 'Completado',
                     creating: 'Creando...',
                     completing: 'Completando...',
                     completedSuccess: '¡Lección completada! ¡Buen trabajo!',
@@ -326,6 +332,7 @@
                     lessonsCompleted: 'lessons completed',
                     backToProgress: 'Back to Progress',
                     markCompleted: 'Mark as Completed',
+                    completedLabel: 'Completed',
                     creating: 'Creating...',
                     completing: 'Completing...',
                     completedSuccess: 'Lesson completed! Great job!',
@@ -651,7 +658,7 @@
             const globalCount = globalCounts[id] || 0;
 
             const statusHtml = completed.includes(id)
-                ? '<p><em>Completed ✅</em></p>'
+                ? `<button class="complete" disabled>${t('completedLabel')} ✅</button>`
                 : `<button id="completeBtn">${t('markCompleted')}</button>`;
 
             app.innerHTML = `
