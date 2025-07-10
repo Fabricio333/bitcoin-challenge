@@ -22,7 +22,7 @@
             padding: 0;
             display: flex;
             justify-content: center;
-            align-items: center;
+            align-items: flex-start;
             min-height: 100vh;
             background: #f6f6f6;
             color: #333;
@@ -83,6 +83,12 @@
             grid-template-columns: repeat(7, 1fr);
             gap: 0.3rem;
             justify-content: center;
+        }
+
+        @media (max-width: 420px) {
+            .grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
         }
 
         @media (max-width: 420px) {
